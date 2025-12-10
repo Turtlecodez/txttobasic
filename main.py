@@ -1,6 +1,6 @@
 # This program converts a .pdf or .txt file to code readable by Texas Instruments TI-83 and TI-84 series calculators.
 # Created by turtle boi/frootdaproot
-# Module dependencies: pyperclip and pdfminer.six
+# Module dependencies: pyperclip, pdfminer.six, and tivars
 # It is recommended to use pip install module to install the dependencies. If you aren't familiar with pip, copy the following command: pip install pyperclip pdfminer.six
 
 
@@ -8,12 +8,16 @@
 import pyperclip
 import textwrap
 from textwrap import wrap
+from tivars.models import *
+from tivars.types import *
+from tivars.types import TIProgram
 from pdfminer.high_level import extract_text
 import os
 
 # Initializing variables
 supported_characters = ''' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890+-='"()[]:;,./\n?\!<>'''
 page_number_variable = "Z"
+prgm_name = "BOOK"
 save_page_number = True
 show_page_number = True
 tutorial = False
@@ -83,7 +87,8 @@ if adv_config == "Y":
             print("3. show page numbers while reading (currently on) (reduces file size when off)")
         if show_page_number == False:
             print("3. show page numbers while reading (currently off) (reduces file size when off)")
-        print("4. quit and continue")
+        print(f"4. change name of program on-calculator (current name: {prgm_name})")
+        print("5. quit and continue")
         user_choice = input("> ")
         if user_choice == "1":
             change_page_variable()
@@ -99,6 +104,22 @@ if adv_config == "Y":
             else:
                 show_page_number = False
         if user_choice == "4":
+            print("Enter new name below. Max 8 characters.")
+            new_name = input("> ")
+            new_name = new_name.upper()
+            valid = True
+            for char in new_name:
+                if char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
+                    valid = False
+            if len(new_name) <= 8 and valid == True:
+                print(f"Confirm name change to {new_name}?")
+                user_choice = input("(y/n) > ")
+                if user_choice.lower() == "y":
+                    print("Name changed.")
+                    prgm_name = new_name
+                else:
+                    print("Aborted.")
+        if user_choice == "5":
             break
 
 
@@ -405,15 +426,18 @@ data = ""
 for block in data_format_step6:
     data += block
 
-# write data to file
-with open("output.txt", "w", encoding="utf-8") as text_file:
-    text_file.write(data)
+# test: write data to 8xp
+my_program = TIProgram(name=prgm_name)
+my_program.load_string(data)
+
+my_program.save(f"{prgm_name}.8xp")
+my_var = my_program.export()
 
 # anything below is the tutorial for getting the file to the calculator
 print("Step 6 completed.")
 print("Your file has been formatted into TI-BASIC.")
-print("It has been outputted under the file name 'output.txt'.")
-print("Would you like a tutorial to get the outputted data onto your calculator?")
+print(f"It has been outputted under the file name '{prgm_name}.8xp'.")
+print("Would you like a tutorial to get the file onto your calculator?")
 while True:
     user_answer = input("(y/n) >")
     if user_answer.lower() == "y":
@@ -452,44 +476,7 @@ while True:
             break
         if user_choice == "r":
             continue
-        print("Step 3: On the far left menu, click on the icon that looks like three squares.")
-        user_choice = input("")
-        if user_choice == "q":
-            break
-        if user_choice == "r":
-            continue
-        print("Step 4: Press the big '+' icon on the right side of your screen.")
-        user_choice = input("")
-        if user_choice == "q":
-            break
-        if user_choice == "r":
-            continue
-        print("Step 5: In the VAR NAME box at the top of the text editor, input what you want the")
-        print("name of your program to be on the calculator.")
-        print("It supports up to 8 characters, and supports uppercase letters and numbers.")
-        user_choice = input("")
-        if user_choice == "q":
-            break
-        if user_choice == "r":
-            continue
-        print("Step 6: Open output.txt and hit ctrl+a then ctrl+c, or just copy the entire file to your clipboard.")
-        print("Type 'c' and then hit enter if you want me to do it for you.")
-        user_choice = input("")
-        if user_choice == "q":
-            break
-        if user_choice == "r":
-            continue
-        if user_choice == "c":
-            copy(data)
-            print("Data successfully copied to clipboard.")
-        print("Step 7: Take the data from your clipboard and paste it into TI-Connect's text editor.")
-        user_choice = input("")
-        if user_choice == "q":
-            break
-        if user_choice == "r":
-            continue
-        print('Step 8: In the menu on the top, press "Actions", then "Send to Calculators"')
-        print('then hit "Send". The file should transfer to your calculator.')
+        print("Step 3: Open your file manager and drag the .8xp file onto your calculator in the interface.")
         user_choice = input("")
         if user_choice == "q":
             break
