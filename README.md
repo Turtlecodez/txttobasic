@@ -10,3 +10,4 @@ Really, everything you need to know is in main.py.
 use pip to install the last two
 
 That's about it... again, the program tells you everything you need to know while you run it.
+test.txt is a test txt file, and test.pdf is a test pdf file
