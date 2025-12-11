@@ -505,6 +505,7 @@ if len(data_format_step6) == 1:
 if len(data_format_step6) > 1:
     i = 0
     for block in data_format_step7:
+        # Edit program name to have a number at the end and export each program
         new_prgm_name = ""
         if len(prgm_name) == 8:
             for j, char in enumerate(prgm_name):
@@ -522,6 +523,7 @@ if len(data_format_step6) > 1:
             my_program.save(f"{new_prgm_name}.8xp")
             my_var = my_program.export()
         except:
+            # Attempt to fix OverflowError if it happens
             print("An error occurred. The file was likely too large.")
             print("Attempting to fix error...")
             lines = block.splitlines()
@@ -535,6 +537,7 @@ if len(data_format_step6) > 1:
                 my_program.save(f"{new_prgm_name}.8xp")
                 my_var = my_program.export()
             except Exception as ex:
+                # OverflowError could not be fixed, or there was a different error
                 print("Your file was exceptionally chonky and the tokenizer still couldn't handle it!")
                 print("Or, there was a different error. The error is printed below:")
                 print(ex)
@@ -542,6 +545,7 @@ if len(data_format_step6) > 1:
                 sys.exit()
             else:
                 try:
+                    # Create second part of splitted block and continue fixing OverflowError
                     new_prgm_name2 = ""
                     i += 1
                     if len(prgm_name) == 8:
@@ -559,11 +563,13 @@ if len(data_format_step6) > 1:
                     my_program.save(f"{new_prgm_name2}.8xp")
                     my_var = my_program.export()
                 except Exception as ex:
+                    # There was another error :(
                     print("There was an error splitting the file... It will be printed below.")
                     print(ex)
                     print("Please try using a different file.")
                     sys.exit()
                 else:
+                    # Error correction worked properly!
                     print(f"Our error correction worked! This block was split into two smaller blocks, {new_prgm_name} and {new_prgm_name2}.")
                     print("The program will now continue for all future blocks.")
         i += 1
@@ -631,5 +637,6 @@ while True:
         if user_choice == "r":
             continue
         break
+
 
 
