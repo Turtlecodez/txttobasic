@@ -3,15 +3,14 @@
 # Module dependencies: pyperclip, pdfminer.six, epub2txt, and tivars
 # It is recommended to use pip install module to install the dependencies. If you aren't familiar with pip, copy the following command: pip install pyperclip pdfminer.six
 
-# most recent update - 12/10/2025
-# made it output a .8xp file instead of a .txt you need to put through ti connect
-# Realized that any story over 21kb in plaintext data would bork my program
-# So I made it split the stories into multiple programs
-# And I added .epub support!
+# most recent update - 12/11/2025
+# just added more comments to make my code easier to read
+# also silenced epub2txt's warning
 
 # Importing modules
 import pyperclip
 import textwrap
+import warnings
 from textwrap import wrap
 from tivars.models import *
 from tivars.types import *
@@ -31,11 +30,17 @@ tutorial = False
 output_to_txt = False
 
 # define functions
+
 def copy(text):
+    '''Copies the text in the singular argument to the user's clipboard.
+        args: One... anything, really.
+        returns: Nothing'''
     pyperclip.copy(text)
 
 def change_page_variable():
-    # Changes the page variable to user input
+    '''Changes the variable page_number_variable to whatever the user inputs.
+        args: None
+        returns: Nothing'''
     print("What would you like to change the variable to? Supported variables are any uppercase English letter.")
     chosen_variable = input("> ")
     if chosen_variable in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" and len(chosen_variable) == 1:
@@ -43,11 +48,13 @@ def change_page_variable():
     else:
         print("Variable left unchanged. Reason: Invalid input.")
 
+
 # Get filename from user and convert into a string
 while True:
     print("what is the filename of the file you would like to convert?")
     file_name = input("> ")
     split_file_name = file_name.split(".")
+    # Making sure filename is valid and exists
     if len(split_file_name) != 2:
         print("Invalid filename.")
         continue
@@ -57,15 +64,15 @@ while True:
     if not(os.path.exists(file_name)):
         print("File does not exist.")
         continue
-    if split_file_name[1] == 'txt':
+    if split_file_name[1] == 'txt': # if file is .txt
         with open(file_name, "r", encoding="utf-8") as f:
             unformatted_data = f.read()
         break
-    elif split_file_name[1] == 'pdf':
+    elif split_file_name[1] == 'pdf': # if file is .pdf
         try:
             print("Grabbing PDF data...")
             unformatted_data = extract_text(file_name)
-        except Exception as ex:
+        except Exception as ex: # error correction
             print("There was an error extracting data from the PDF. Make sure the")
             print("text in your PDF file is selectable.")
             print("The exception is printed below:")
@@ -74,12 +81,12 @@ while True:
         else:
             print("PDF data has been successfully grabbed.")
             break
-    elif split_file_name[1] == 'epub':
+    elif split_file_name[1] == 'epub': # if file is .epub
         try:
-            print("Grabbing EPUB data...")
-            print("Please ignore any 'FutureWarning' error below. It does not affect the program.")
-            unformatted_data = epub2txt(file_name)
-            print("Please ignore any 'FutureWarning' error above. It does not affect the program.")
+            with warnings.catch_warnings(): # silence warnings, but catch errors
+                warnings.simplefilter("ignore")
+                print("Grabbing EPUB data...")
+                unformatted_data = epub2txt(file_name)
         except Exception as ex:
             print("There was an error extracting data from the EPUB.")
             print("The exception is printed below:")
@@ -96,6 +103,7 @@ if adv_config != "Y" and adv_config != "N" or adv_config == "N":
     print("n")
 if adv_config == "Y":
     while True:
+        # print out the menu
         print("this is advanced configuration mode")
         print("please select a number")
         print("")
@@ -112,6 +120,7 @@ if adv_config == "Y":
         print(f"5. Enable output to a .txt file as well as a .8xp file (current value: {output_to_txt})")
         print("6. quit and continue")
         user_choice = input("> ")
+        # change variables depending on choice
         if user_choice == "1":
             change_page_variable()
             continue
@@ -125,7 +134,7 @@ if adv_config == "Y":
                 show_page_number = True
             else:
                 show_page_number = False
-        if user_choice == "4":
+        if user_choice == "4": # program name changing code
             print("Enter new name below. Max 8 characters.")
             new_name = input("> ")
             new_name = new_name.upper()
@@ -191,8 +200,7 @@ for block in data_format_step1:
 print("Step 2 completed. Beginning step 3...")
 # wrap the text so that everything fits into a row of row_length
 data_format_step3 = []
-# wrap the lines seperated by newlines seperately so that newlines get preserved
-for paragraph in data_format_step2.split('\n'):
+for paragraph in data_format_step2.split('\n'): # wrap the lines seperated by newlines seperately so that they get preserved
     words = paragraph.split(' ')
     fixed_words = []
     for w in words:
@@ -201,13 +209,13 @@ for paragraph in data_format_step2.split('\n'):
         fixed_words.append(w)
 
     paragraph = ' '.join(fixed_words)
-    wrapped = textwrap.wrap(
+    wrapped = textwrap.wrap( # actually wraps it
         paragraph,
         width=row_length,
         break_long_words=False,
         break_on_hyphens=False
     )
-
+    # appends to list
     if not wrapped:
         data_format_step3.append("")
     else:
@@ -235,16 +243,16 @@ if show_page_number == True:
     current_block = ""
     block_number = 1
     total_data_len = len(data_format_step4)
-    for i, line in enumerate(data_format_step4):
+    for i, line in enumerate(data_format_step4): # loop by 26-character line
         current_block += line
         if len(current_block) == total_chars:
-            label = f"Block {block_number}"
+            label = f"Block {block_number}" # add block number
             current_block += label + " " * (row_length - len(label))
-            data_format_step5.append(current_block)
+            data_format_step5.append(current_block) # append block
             current_block = ""
             block_number += 1
 
-    # do the final block if needed
+    # do the final block if there's extra left
     if current_block != "":
         if len(current_block) < total_chars:
             current_block += " " * (total_chars - len(current_block))
@@ -259,10 +267,10 @@ if show_page_number == False:
     block_number = 1
     total_data_len = len(data_format_step4)
     total_chars = real_total_chars
-    for i, line in enumerate(data_format_step4):
+    for i, line in enumerate(data_format_step4): # loop by line
         current_block += line
         if len(current_block) == total_chars:
-            data_format_step5.append(current_block)
+            data_format_step5.append(current_block) # append block
             current_block = ""
             block_number += 1
 
@@ -313,7 +321,7 @@ Goto E
 Lbl F
 1→{page_number_variable}
 Lbl B"""
-                data_format_step6[b].append(header)
+                data_format_step6[b].append(header) # append - row length of 26 and page number saving ON
                 data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
@@ -365,7 +373,7 @@ Goto E
 Lbl F
 1→Z
 Lbl B"""
-                data_format_step6[b].append(header)
+                data_format_step6[b].append(header) # append - row length of 16 and page number saving ON
                 data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
@@ -395,7 +403,7 @@ Goto Q
 Lbl D
 Stop
 Lbl A"""
-                data_format_step6[b].append(header)
+                data_format_step6[b].append(header) # append - row length of 26 and page number saving OFF
                 data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
@@ -427,7 +435,7 @@ Goto Q
 Lbl D
 Stop
 Lbl A"""
-                data_format_step6[b].append(header)
+                data_format_step6[b].append(header) # append header - row length of 16 and page number saving OFF
                 data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
@@ -436,7 +444,7 @@ Output(1,1,"{block}")
 {i+1}→{page_number_variable}
 Pause 
 End""")
-    elif i+1 == len(data_format_step5): # and this part appends every other part of the file
+    elif i+1 == len(data_format_step5): # append base reading block
         data_format_step6[b].append(f"""
 ClrHome
 If Z<{i+2}
@@ -448,7 +456,7 @@ End
 ClrHome
 """)
     else:
-        if save_page_number == True:
+        if save_page_number == True: # append base reading block - page number saving on
             data_format_step6[b].append(f"""
 ClrHome
 If Z<{i+2}
@@ -457,13 +465,13 @@ Output(1,1,"{block}")
 {i+1}→Z
 Pause 
 End""")
-        elif save_page_number == False:
+        elif save_page_number == False: # append base reading block - page number saving off
             data_format_step6[b].append(f"""
 ClrHome
 Output(1,1,"{block}")
 Pause """)
             
-    # move output to the next block if current block is getting too big
+    # Finish off current program if it's getting too big to tokenize
     if save_page_number == True:
         if (i - ((b+1)*140)) + 1 >= -5:
             data_format_step6.append([])
@@ -513,7 +521,7 @@ if len(data_format_step6) == 1:
 if len(data_format_step6) > 1:
     i = 0
     for block in data_format_step7:
-        # Edit program name to have a number at the end and export each program
+        # Edit program name to have a number at the end
         new_prgm_name = ""
         if len(prgm_name) == 8:
             for j, char in enumerate(prgm_name):
@@ -524,7 +532,7 @@ if len(data_format_step6) > 1:
         elif len(prgm_name) < 8:
             new_prgm_name += prgm_name
             new_prgm_name += str(i+1)
-        try:
+        try: # Export each program
             my_program = TIProgram(name=new_prgm_name)
             my_program.load_string(block)
 
@@ -538,14 +546,14 @@ if len(data_format_step6) > 1:
             last_55 = "\n".join(lines[-55:])
             last_55 = header + "\n" + last_55
             block = "\n".join(lines[:-55])
-            try:
+            try: # Export corrected program
                 my_program = TIProgram(name=new_prgm_name)
                 my_program.load_string(block)
 
                 my_program.save(f"{new_prgm_name}.8xp")
                 my_var = my_program.export()
             except Exception as ex:
-                # OverflowError could not be fixed, or there was a different error
+                # Error correction failed
                 print("Your file was exceptionally chonky and the tokenizer still couldn't handle it!")
                 print("Or, there was a different error. The error is printed below:")
                 print(ex)
@@ -553,7 +561,7 @@ if len(data_format_step6) > 1:
                 sys.exit()
             else:
                 try:
-                    # Create second part of splitted block and continue fixing OverflowError
+                    # Error correction for first shard completed, export second shard
                     new_prgm_name2 = ""
                     i += 1
                     if len(prgm_name) == 8:
@@ -582,19 +590,19 @@ if len(data_format_step6) > 1:
                     print("The program will now continue for all future blocks.")
         i += 1
 
-# anything below is the tutorial for getting the file to the calculator
-if len(data_format_step6) == 1:
+# Anything below is the tutorial for getting the file to the calculator
+if len(data_format_step6) == 1: # Print if one program was exported
     print("Step 6 completed.")
     print("Your file has been formatted into TI-BASIC.")
     print(f"It has been outputted under the file name '{prgm_name}.8xp'.")
     print("Would you like a tutorial on how to get the file onto your calculator?")
-if len(data_format_step6) > 1:
+if len(data_format_step6) > 1: # Print if multiple programs were exported
     print("Step 6 completed.")
     print("Your file was too big to fit in a singular file.")
     print(f"It has been split into multiple files with names starting with {prgm_name}.")
     print("Please keep in mind that every program saves page numbers to the SAME VARIABLE. One program can override another.")
     print("Would you like a tutorial on how to get the files onto your calculator?")
-while True:
+while True: # Ask if user wants to see the tutorial or not
     user_answer = input("(y/n) >")
     if user_answer.lower() == "y":
         tutorial = True
@@ -608,7 +616,7 @@ while True:
     if tutorial == False:
         break
     if tutorial == True:
-        print("Beginning tutorial.")
+        print("Beginning tutorial.") # Tutorial - Intro
         print("Please keep in mind this tutorial is only useful if you have a CE or C calculator.")
         print("To do this tutorial, you will need a device running Windows or MacOS, any calculator with CE in its name (or a TI-84 Plus C Silver edition), and a cable to connect that calculator to the aforementioned device.")
         print("(you can press enter to continue to the next step, type q then hit enter to quit, or type r then enter to restart tutorial.)")
@@ -618,7 +626,7 @@ while True:
         if user_choice == "r":
             continue
         copy("https://education.ti.com/en/software/details/en/CA9C74CAD02440A69FDC7189D7E1B6C2/swticonnectcesoftware")
-        print("Step 1: Visit the URL that has been copied to your clipboard in a web browser, then")
+        print("Step 1: Visit the URL that has been copied to your clipboard in a web browser, then") # Tutorial - Step 1
         print("download the TI Connect CE software for your operating system.")
         user_choice = input("")
         if user_choice == "q":
@@ -626,27 +634,22 @@ while True:
         if user_choice == "r":
             continue
         print("Step 2: Once you have opened the program and reached the main menu, plug in your calculator to your device.")
-        print("It should connect, and show up on the TI-Connect CE interface.")
+        print("It should connect, and show up on the TI-Connect CE interface.") # Tutorial - Step 2
         user_choice = input("")
         if user_choice == "q":
             break
         if user_choice == "r":
             continue
-        print("Step 3: Open your file manager and drag the .8xp file onto your calculator in the interface.")
+        print("Step 3: Open your file manager and drag the .8xp file onto your calculator in the interface.") # Tutorial - Step 3
         user_choice = input("")
         if user_choice == "q":
             break
         if user_choice == "r":
             continue
-        print("Congradumacations, you've gotten the file onto your calculator.")
+        print("Congradumacations, you've gotten the file onto your calculator.") # Tutorial - Outro
         print("Give yourself a pat on the back, then go read whatever you put on there!")
         print("Press enter to quit, or type r and enter to restart.")
         user_choice = input("")
         if user_choice == "r":
             continue
         break
-
-
-
-
-
