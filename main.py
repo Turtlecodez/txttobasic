@@ -1,8 +1,12 @@
 # This program converts a .pdf or .txt file to code readable by Texas Instruments TI-83 and TI-84 series calculators.
 # Created by turtle boi/frootdaproot
-# Module dependencies: pyperclip, pdfminer.six, and tivars
+# Module dependencies: pyperclip, pdfminer.six, epub2txt, and tivars
 # It is recommended to use pip install module to install the dependencies. If you aren't familiar with pip, copy the following command: pip install pyperclip pdfminer.six
 
+# most recent update - 12/10/2025
+# Realized that any story over 21kb in plaintext data would bork my program
+# So I made it split the stories into multiple programs
+# And I added .epub support!
 
 # Importing modules
 import pyperclip
@@ -11,8 +15,10 @@ from textwrap import wrap
 from tivars.models import *
 from tivars.types import *
 from tivars.types import TIProgram
+from epub2txt import epub2txt
 from pdfminer.high_level import extract_text
 import os
+import sys
 
 # Initializing variables
 supported_characters = ''' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890+-='"()[]:;,./\n?\!<>'''
@@ -21,6 +27,7 @@ prgm_name = "BOOK"
 save_page_number = True
 show_page_number = True
 tutorial = False
+output_to_txt = False
 
 # define functions
 def copy(text):
@@ -43,7 +50,7 @@ while True:
     if len(split_file_name) != 2:
         print("Invalid filename.")
         continue
-    if split_file_name[1] != 'txt' and split_file_name[1] != 'pdf':
+    if split_file_name[1] != 'txt' and split_file_name[1] != 'pdf' and split_file_name[1] != 'epub':
         print("Invalid file extension.")
         continue
     if not(os.path.exists(file_name)):
@@ -64,7 +71,20 @@ while True:
             print(ex)
             continue
         else:
-            print("PDF data grabbed.")
+            print("PDF data has been successfully grabbed.")
+            break
+    elif split_file_name[1] == 'epub':
+        try:
+            print("Grabbing EPUB data...")
+            print("Please ignore any 'FutureWarning' error below. It does not affect the program.")
+            unformatted_data = epub2txt(file_name)
+            print("Please ignore any 'FutureWarning' error above. It does not affect the program.")
+        except Exception as ex:
+            print("There was an error extracting data from the EPUB.")
+            print("The exception is printed below:")
+            print(ex)
+        else:
+            print("EPUB data has been successfully grabbed.")
             break
 
 # advanced configuration settings
@@ -88,7 +108,8 @@ if adv_config == "Y":
         if show_page_number == False:
             print("3. show page numbers while reading (currently off) (reduces file size when off)")
         print(f"4. change name of program on-calculator (current name: {prgm_name})")
-        print("5. quit and continue")
+        print(f"5. Enable output to a .txt file as well as a .8xp file (current value: {output_to_txt})")
+        print("6. quit and continue")
         user_choice = input("> ")
         if user_choice == "1":
             change_page_variable()
@@ -120,6 +141,11 @@ if adv_config == "Y":
                 else:
                     print("Aborted.")
         if user_choice == "5":
+            if output_to_txt == False:
+                output_to_txt = True
+            else:
+                output_to_txt = False
+        if user_choice == "6":
             break
 
 
@@ -147,7 +173,11 @@ print("Formatting started. Beginning step 1...")
 data_format_step1 = ""
 for char in unformatted_data:
     if char in supported_characters:
-        data_format_step1 = data_format_step1 + char
+        if char == '"':
+            data_format_step1 = data_format_step1 + "'"
+        else:
+            data_format_step1 = data_format_step1 + char
+        
 
 print("Step 1 completed. Beginning step 2...")
 # make it a string :)
@@ -162,14 +192,12 @@ data_format_step3 = []
 for paragraph in data_format_step2.split('\n'):
     words = paragraph.split(' ')
     fixed_words = []
-
     for w in words:
         if len(w) > row_length:
             w = ' '.join(w[i:i+row_length] for i in range(0, len(w), row_length))
         fixed_words.append(w)
 
     paragraph = ' '.join(fixed_words)
-
     wrapped = textwrap.wrap(
         paragraph,
         width=row_length,
@@ -240,13 +268,16 @@ if show_page_number == False:
         data_format_step5.append(current_block)
 
 print("Step 5 completed. Beginning step 6...")
+b = 0
+a = 1
 # put the blocks into the BASIC code
-data_format_step6 = []
+data_format_step6 = [[]]
 for i, block in enumerate(data_format_step5):
-    if i == 0:
+    if a == 1: # this part is only to append the header to the file
+        a = 2
         if save_page_number == True:
             if row_length == 26:
-                data_format_step6.append(f"""Lbl Q
+                header = f"""Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Continue book",B,"Tutorial",C,"Quit",D)
 Lbl C
@@ -278,8 +309,9 @@ Goto Q
 Goto E
 Lbl F
 1→{page_number_variable}
-Lbl B
-ClrHome
+Lbl B"""
+                data_format_step6[b].append(header)
+                data_format_step6[b].append(f"""ClrHome
 If {page_number_variable}<{i+2}
 Then
 Output(1,1,"{block}")
@@ -287,7 +319,7 @@ Output(1,1,"{block}")
 Pause 
 End""")
             elif row_length == 16:
-                data_format_step6.append(f"""Lbl Q
+                header = f"""Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Continue book",B,"Tutorial",C,"Quit",D)
 Lbl C
@@ -328,8 +360,9 @@ Goto Q
 Goto E
 Lbl F
 1→Z
-Lbl B
-ClrHome
+Lbl B"""
+                data_format_step6[b].append(header)
+                data_format_step6[b].append(f"""ClrHome
 If {page_number_variable}<{i+2}
 Then
 Output(1,1,"{block}")
@@ -338,7 +371,7 @@ Pause
 End""")
         elif save_page_number == False:
             if row_length == 26:
-                data_format_step6.append(f"""Lbl Q
+                data_format_step6[b].append(f"""Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Tutorial",C,"Quit",D)
 Lbl C
@@ -365,7 +398,7 @@ Output(1,1,"{block}")
 Pause 
 End""")
             elif row_length == 16:
-                data_format_step6.append(f"""Lbl Q
+                data_format_step6[b].append(f"""Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Tutorial",C,"Quit",D)
 Lbl C
@@ -394,8 +427,8 @@ Output(1,1,"{block}")
 {i+1}→{page_number_variable}
 Pause 
 End""")
-    elif i+1 == len(data_format_step5):
-        data_format_step6.append(f"""
+    elif i+1 == len(data_format_step5): # and this part appends every other part of the file
+        data_format_step6[b].append(f"""
 ClrHome
 If Z<{i+2}
 Then
@@ -407,7 +440,7 @@ ClrHome
 """)
     else:
         if save_page_number == True:
-            data_format_step6.append(f"""
+            data_format_step6[b].append(f"""
 ClrHome
 If Z<{i+2}
 Then
@@ -416,28 +449,136 @@ Output(1,1,"{block}")
 Pause 
 End""")
         elif save_page_number == False:
-            data_format_step6.append(f"""
+            data_format_step6[b].append(f"""
 ClrHome
 Output(1,1,"{block}")
-Pause""")
+Pause """)
+            
+    # move output to the next block if current block is getting too big
+    if save_page_number == True:
+        if (i - ((b+1)*140)) + 1 >= -5:
+            data_format_step6.append([])
+            b += 1
+            a = 1
+    if save_page_number == False:
+        if len(data_format_step6[b].split()) >= 470:
+            data_format_step6.append([])
+            b += 1
+            a = 1
 
-# put data into one final string
-data = ""
+# Put the smaller blocks together into bigger seperated blocks
+data_format_step7 = []
 for block in data_format_step6:
+    shard = ""
+    for mini_block in block:
+        shard += mini_block
+    data_format_step7.append(shard)
+
+# put full data into string data
+data = ""
+for piece in data_format_step6:
+    block = ""
+    for mini_block in piece:
+        block += mini_block
     data += block
 
-# test: write data to 8xp
-my_program = TIProgram(name=prgm_name)
-my_program.load_string(data)
+# output to a .txt file if that setting is enabled
+if output_to_txt == True:
+    if len(data_format_step6) > 1:
+        for i, thing in enumerate(data_format_step7):
+            with open(f"output{i+1}.txt", "w", encoding="utf-8") as text_file:
+                text_file.write(thing)
+    else:
+        with open("output.txt", "w", encoding="utf-8") as text_file:
+            text_file.write(data)
 
-my_program.save(f"{prgm_name}.8xp")
-my_var = my_program.export()
+# Output to a single program if the file is small enough
+if len(data_format_step6) == 1:
+    my_program = TIProgram(name=prgm_name)
+    my_program.load_string(mini_block)
+
+    my_program.save(f"{prgm_name}.8xp")
+    my_var = my_program.export()
+
+# Output to multiple programs if file size is too big
+if len(data_format_step6) > 1:
+    i = 0
+    for block in data_format_step7:
+        new_prgm_name = ""
+        if len(prgm_name) == 8:
+            for j, char in enumerate(prgm_name):
+                if j != 7:
+                    new_prgm_name += char
+                if j == 7:
+                    new_prgm_name += i+1
+        elif len(prgm_name) < 8:
+            new_prgm_name += prgm_name
+            new_prgm_name += str(i+1)
+        try:
+            my_program = TIProgram(name=new_prgm_name)
+            my_program.load_string(block)
+
+            my_program.save(f"{new_prgm_name}.8xp")
+            my_var = my_program.export()
+        except:
+            print("An error occurred. The file was likely too large.")
+            print("Attempting to fix error...")
+            lines = block.splitlines()
+            last_55 = "\n".join(lines[-55:])
+            last_55 = header + "\n" + last_55
+            block = "\n".join(lines[:-55])
+            try:
+                my_program = TIProgram(name=new_prgm_name)
+                my_program.load_string(block)
+
+                my_program.save(f"{new_prgm_name}.8xp")
+                my_var = my_program.export()
+            except Exception as ex:
+                print("Your file was exceptionally chonky and the tokenizer still couldn't handle it!")
+                print("Or, there was a different error. The error is printed below:")
+                print(ex)
+                print("Please try using a different file.")
+                sys.exit()
+            else:
+                try:
+                    new_prgm_name2 = ""
+                    i += 1
+                    if len(prgm_name) == 8:
+                        for j, char in enumerate(prgm_name):
+                            if j != 7:
+                                new_prgm_name2 += char
+                            if j == 7:
+                                new_prgm_name2 += i+2
+                    elif len(prgm_name) < 8:
+                        new_prgm_name2 += prgm_name
+                        new_prgm_name2 += str(i+1)
+                    my_program = TIProgram(name=new_prgm_name2)
+                    my_program.load_string(last_55)
+
+                    my_program.save(f"{new_prgm_name2}.8xp")
+                    my_var = my_program.export()
+                except Exception as ex:
+                    print("There was an error splitting the file... It will be printed below.")
+                    print(ex)
+                    print("Please try using a different file.")
+                    sys.exit()
+                else:
+                    print(f"Our error correction worked! This block was split into two smaller blocks, {new_prgm_name} and {new_prgm_name2}.")
+                    print("The program will now continue for all future blocks.")
+        i += 1
 
 # anything below is the tutorial for getting the file to the calculator
-print("Step 6 completed.")
-print("Your file has been formatted into TI-BASIC.")
-print(f"It has been outputted under the file name '{prgm_name}.8xp'.")
-print("Would you like a tutorial to get the file onto your calculator?")
+if len(data_format_step6) == 1:
+    print("Step 6 completed.")
+    print("Your file has been formatted into TI-BASIC.")
+    print(f"It has been outputted under the file name '{prgm_name}.8xp'.")
+    print("Would you like a tutorial on how to get the file onto your calculator?")
+if len(data_format_step6) > 1:
+    print("Step 6 completed.")
+    print("Your file was too big to fit in a singular file.")
+    print(f"It has been split into multiple files with names starting with {prgm_name}.")
+    print("Please keep in mind that every program saves page numbers to the SAME VARIABLE. One program can override another.")
+    print("Would you like a tutorial on how to get the files onto your calculator?")
 while True:
     user_answer = input("(y/n) >")
     if user_answer.lower() == "y":
