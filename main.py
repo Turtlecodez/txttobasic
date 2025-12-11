@@ -496,7 +496,7 @@ if output_to_txt == True:
 # Output to a single program if the file is small enough
 if len(data_format_step6) == 1:
     my_program = TIProgram(name=prgm_name)
-    my_program.load_string(mini_block)
+    my_program.load_string(data)
 
     my_program.save(f"{prgm_name}.8xp")
     my_var = my_program.export()
@@ -631,4 +631,5 @@ while True:
         if user_choice == "r":
             continue
         break
+
 
