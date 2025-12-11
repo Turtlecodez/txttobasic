@@ -312,7 +312,8 @@ Lbl F
 1→{page_number_variable}
 Lbl B"""
                 data_format_step6[b].append(header)
-                data_format_step6[b].append(f"""ClrHome
+                data_format_step6[b].append(f"""
+ClrHome
 If {page_number_variable}<{i+2}
 Then
 Output(1,1,"{block}")
@@ -363,7 +364,8 @@ Lbl F
 1→Z
 Lbl B"""
                 data_format_step6[b].append(header)
-                data_format_step6[b].append(f"""ClrHome
+                data_format_step6[b].append(f"""
+ClrHome
 If {page_number_variable}<{i+2}
 Then
 Output(1,1,"{block}")
@@ -372,7 +374,7 @@ Pause
 End""")
         elif save_page_number == False:
             if row_length == 26:
-                data_format_step6[b].append(f"""Lbl Q
+                header = """Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Tutorial",C,"Quit",D)
 Lbl C
@@ -390,7 +392,9 @@ Pause
 Goto Q
 Lbl D
 Stop
-Lbl A
+Lbl A"""
+                data_format_step6[b].append(header)
+                data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -399,7 +403,7 @@ Output(1,1,"{block}")
 Pause 
 End""")
             elif row_length == 16:
-                data_format_step6[b].append(f"""Lbl Q
+                header = """Lbl Q
 ClrHome
 Menu("turtle's ebook reader","Restart book",A,"Tutorial",C,"Quit",D)
 Lbl C
@@ -420,7 +424,9 @@ Pause
 Goto Q
 Lbl D
 Stop
-Lbl A
+Lbl A"""
+                data_format_step6[b].append(header)
+                data_format_step6[b].append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -637,6 +643,7 @@ while True:
         if user_choice == "r":
             continue
         break
+
 
 
 
