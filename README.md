@@ -1,13 +1,20 @@
 # txttobasic
-Allows you to read any .txt or .pdf file on your TI graphing calculator!
-Really, everything you need to know is in main.py.
+Allows you to read various text files on your TI graphing calculator!
+
+**Supported File Types**
+- .epub
+- .txt
+- .pdf
 
 **Dependencies**:
 - Python 3
 - pyperclip
 - pdfminer.six
+- tivars
+- epub2txt
 
-use pip to install the last two
-
-That's about it... again, the program tells you everything you need to know while you run it.
-test.txt is a test txt file, and test.pdf is a test pdf file
+## devlog:
+**12/10/2025**
+pretty big update today! it now spits out an 8xp file
+fixed issue where big files broke the program, because 8xp files can only be so large
+so now it splits it into multiple 8xps if needed
