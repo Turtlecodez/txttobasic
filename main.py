@@ -175,9 +175,11 @@ data_format_step1 = ""
 for char in unformatted_data:
     if char in supported_characters:
         if char == '"':
-            data_format_step1 = data_format_step1 + "'"
-        else:
-            data_format_step1 = data_format_step1 + char
+            char = "'"
+        data_format_step1 = data_format_step1 + char
+    else:
+        if char == "…":
+            data_format_step1 = data_format_step1 + "..."
         
 
 print("Step 1 completed. Beginning step 2...")
@@ -643,6 +645,7 @@ while True:
         if user_choice == "r":
             continue
         break
+
 
 
 
