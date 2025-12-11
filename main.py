@@ -4,6 +4,7 @@
 # It is recommended to use pip install module to install the dependencies. If you aren't familiar with pip, copy the following command: pip install pyperclip pdfminer.six
 
 # most recent update - 12/10/2025
+# made it output a .8xp file instead of a .txt you need to put through ti connect
 # Realized that any story over 21kb in plaintext data would bork my program
 # So I made it split the stories into multiple programs
 # And I added .epub support!
@@ -630,3 +631,4 @@ while True:
         if user_choice == "r":
             continue
         break
+
