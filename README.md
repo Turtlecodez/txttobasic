@@ -21,7 +21,8 @@ Allows you to read various text files on your TI graphing calculator!
 - set show page numbers while reading to default to False because no one wants it on anyways
 - added dynamic tokenizing to get the maximum sized blocks you can for each one instead of my shitty earlier method
 - fixed an error that happens if you disable page number showing
-- fixed monochrome calculator support (i actually don't know if it errored in the first place but uhh i hope i fixed it anyways)
+- fixed monochrome calculator support
+- actually it's more like fixed a possible error, it probably doesn't even work still (can someone test it pls :()
 
 **12/11/2025**
 
