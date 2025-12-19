@@ -3,9 +3,13 @@
 # Module dependencies: pyperclip, pdfminer.six, epub2txt, and tivars
 # It is recommended to use pip install module to install the dependencies. If you aren't familiar with pip, copy the following command: pip install pyperclip pdfminer.six
 
-# most recent update - 12/11/2025
-# just added more comments to make my code easier to read
-# also silenced epub2txt's warning
+# most recent update - 12/19/2025
+# set show page numbers while reading to default to False because no one wants it on anyways
+# added dynamic tokenizing to get the maximum sized blocks you can for each one instead of my shitty earlier method
+# fixed an error that happens if you disable page number showing
+# fixed monochrome calculator support
+# actually it's more like fixed a possible error, it probably doesn't even work still (can someone test it pls :()
+# fixed issue where the ellipsis unicode character didn't get on the calculator and broke it
 
 # Importing modules
 import pyperclip
@@ -21,26 +25,19 @@ import os
 import sys
 
 # Initializing variables
-supported_characters = ''' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890+-='"()[]:;,./\n?\!<>'''
+supported_characters = ''' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890+-='"()[]:;,./\n?\!<>…'''
 page_number_variable = "Z"
 prgm_name = "BOOK"
 save_page_number = True
-show_page_number = True
+show_page_number = False
 tutorial = False
 output_to_txt = False
 
 # define functions
-
 def copy(text):
-    '''Copies the text in the singular argument to the user's clipboard.
-        args: One... anything, really.
-        returns: Nothing'''
     pyperclip.copy(text)
 
 def change_page_variable():
-    '''Changes the variable page_number_variable to whatever the user inputs.
-        args: None
-        returns: Nothing'''
     print("What would you like to change the variable to? Supported variables are any uppercase English letter.")
     chosen_variable = input("> ")
     if chosen_variable in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" and len(chosen_variable) == 1:
@@ -181,14 +178,19 @@ while True:
 print("Formatting started. Beginning step 1...")
 # Remove unsupported characters from data
 data_format_step1 = ""
+prev_char = ""
 for char in unformatted_data:
     if char in supported_characters:
+        if char == "\n":
+            if prev_char != "\n":
+                data_format_step1 = data_format_step1 + char
+                continue
+            else:
+                continue
         if char == '"':
             char = "'"
         data_format_step1 = data_format_step1 + char
-    else:
-        if char == "…":
-            data_format_step1 = data_format_step1 + "..."
+        prev_char = char
         
 
 print("Step 1 completed. Beginning step 2...")
@@ -281,8 +283,8 @@ if show_page_number == False:
 print("Step 5 completed. Beginning step 6...")
 b = 0
 a = 1
-# put the blocks into the BASIC code
-data_format_step6 = [[]]
+# append list blocks into the BASIC code
+data_format_step6 = []
 for i, block in enumerate(data_format_step5):
     if a == 1: # this part is only to append the header to the file
         a = 2
@@ -321,8 +323,7 @@ Goto E
 Lbl F
 1→{page_number_variable}
 Lbl B"""
-                data_format_step6[b].append(header) # append - row length of 26 and page number saving ON
-                data_format_step6[b].append(f"""
+                data_format_step6.append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -373,8 +374,7 @@ Goto E
 Lbl F
 1→Z
 Lbl B"""
-                data_format_step6[b].append(header) # append - row length of 16 and page number saving ON
-                data_format_step6[b].append(f"""
+                data_format_step6.append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -403,8 +403,7 @@ Goto Q
 Lbl D
 Stop
 Lbl A"""
-                data_format_step6[b].append(header) # append - row length of 26 and page number saving OFF
-                data_format_step6[b].append(f"""
+                data_format_step6.append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -435,8 +434,7 @@ Goto Q
 Lbl D
 Stop
 Lbl A"""
-                data_format_step6[b].append(header) # append header - row length of 16 and page number saving OFF
-                data_format_step6[b].append(f"""
+                data_format_step6.append(f"""
 ClrHome
 If {page_number_variable}<{i+2}
 Then
@@ -445,7 +443,7 @@ Output(1,1,"{block}")
 Pause 
 End""")
     elif i+1 == len(data_format_step5): # append base reading block
-        data_format_step6[b].append(f"""
+        data_format_step6.append(f"""
 ClrHome
 If Z<{i+2}
 Then
@@ -457,7 +455,7 @@ ClrHome
 """)
     else:
         if save_page_number == True: # append base reading block - page number saving on
-            data_format_step6[b].append(f"""
+            data_format_step6.append(f"""
 ClrHome
 If Z<{i+2}
 Then
@@ -466,137 +464,71 @@ Output(1,1,"{block}")
 Pause 
 End""")
         elif save_page_number == False: # append base reading block - page number saving off
-            data_format_step6[b].append(f"""
+            data_format_step6.append(f"""
 ClrHome
 Output(1,1,"{block}")
 Pause """)
-            
-    # Finish off current program if it's getting too big to tokenize
-    if save_page_number == True:
-        if (i - ((b+1)*140)) + 1 >= -5:
-            data_format_step6.append([])
-            b += 1
-            a = 1
-    if save_page_number == False:
-        if len(data_format_step6[b].split()) >= 470:
-            data_format_step6.append([])
-            b += 1
-            a = 1
 
-# Put the smaller blocks together into bigger seperated blocks
-data_format_step7 = []
-for block in data_format_step6:
-    shard = ""
-    for mini_block in block:
-        shard += mini_block
-    data_format_step7.append(shard)
+# dynamically create perfect sized blocks :)
+i = 0
+if row_length == 26:
+    x = 140
+else:
+    x = 50
+block_num = 0  # count how many blocks we've successfully created
 
-# put full data into string data
-data = ""
-for piece in data_format_step6:
-    block = ""
-    for mini_block in piece:
-        block += mini_block
-    data += block
+while i < len(data_format_step6):
+    current_x = x  # start with the current block size
 
-# output to a .txt file if that setting is enabled
-if output_to_txt == True:
-    if len(data_format_step6) > 1:
-        for i, thing in enumerate(data_format_step7):
-            with open(f"output{i+1}.txt", "w", encoding="utf-8") as text_file:
-                text_file.write(thing)
-    else:
-        with open("output.txt", "w", encoding="utf-8") as text_file:
-            text_file.write(data)
+    while current_x > 0:
+        current_x = min(current_x, len(data_format_step6) - i)
+        current_block = header + "".join(data_format_step6[i:i + current_x])
 
-# Output to a single program if the file is small enough
-if len(data_format_step6) == 1:
-    my_program = TIProgram(name=prgm_name)
-    my_program.load_string(data)
+        more_blocks_exist = (i + current_x) < len(data_format_step6)
 
-    my_program.save(f"{prgm_name}.8xp")
-    my_var = my_program.export()
-
-# Output to multiple programs if file size is too big
-if len(data_format_step6) > 1:
-    i = 0
-    for block in data_format_step7:
-        # Edit program name to have a number at the end
-        new_prgm_name = ""
+        # make the program name
         if len(prgm_name) == 8:
-            for j, char in enumerate(prgm_name):
-                if j != 7:
-                    new_prgm_name += char
-                if j == 7:
-                    new_prgm_name += i+1
-        elif len(prgm_name) < 8:
-            new_prgm_name += prgm_name
-            new_prgm_name += str(i+1)
-        try: # Export each program
-            my_program = TIProgram(name=new_prgm_name)
-            my_program.load_string(block)
-
-            my_program.save(f"{new_prgm_name}.8xp")
-            my_var = my_program.export()
-        except:
-            # Attempt to fix OverflowError if it happens
-            print("An error occurred. The file was likely too large.")
-            print("Attempting to fix error...")
-            lines = block.splitlines()
-            last_55 = "\n".join(lines[-55:])
-            last_55 = header + "\n" + last_55
-            block = "\n".join(lines[:-55])
-            try: # Export corrected program
-                my_program = TIProgram(name=new_prgm_name)
-                my_program.load_string(block)
-
-                my_program.save(f"{new_prgm_name}.8xp")
-                my_var = my_program.export()
-            except Exception as ex:
-                # Error correction failed
-                print("Your file was exceptionally chonky and the tokenizer still couldn't handle it!")
-                print("Or, there was a different error. The error is printed below:")
-                print(ex)
-                print("Please try using a different file.")
-                sys.exit()
+            if block_num == 0 and not more_blocks_exist:
+                current_name = prgm_name
             else:
-                try:
-                    # Error correction for first shard completed, export second shard
-                    new_prgm_name2 = ""
-                    i += 1
-                    if len(prgm_name) == 8:
-                        for j, char in enumerate(prgm_name):
-                            if j != 7:
-                                new_prgm_name2 += char
-                            if j == 7:
-                                new_prgm_name2 += i+2
-                    elif len(prgm_name) < 8:
-                        new_prgm_name2 += prgm_name
-                        new_prgm_name2 += str(i+1)
-                    my_program = TIProgram(name=new_prgm_name2)
-                    my_program.load_string(last_55)
+                current_name = prgm_name[:-1] + str(block_num+1)
+        else:
+            if block_num == 0 and not more_blocks_exist:
+                current_name = prgm_name
+            else:
+                current_name = f"{prgm_name}{block_num+1}"
 
-                    my_program.save(f"{new_prgm_name2}.8xp")
-                    my_var = my_program.export()
-                except Exception as ex:
-                    # There was another error :(
-                    print("There was an error splitting the file... It will be printed below.")
-                    print(ex)
-                    print("Please try using a different file.")
-                    sys.exit()
-                else:
-                    # Error correction worked properly!
-                    print(f"Our error correction worked! This block was split into two smaller blocks, {new_prgm_name} and {new_prgm_name2}.")
-                    print("The program will now continue for all future blocks.")
+        try:
+            # this part is where the cool stuff happens
+            my_program = TIProgram(name=current_name)
+            my_program.load_string(current_block)
+            if row_length == 26:
+                my_program.save(f"{current_name}.8xp")
+            else:
+                my_program.save("HELLO.8xp", model=TI_83P)
+            
+            print(f"Program {current_name} was successfully tokenized") # it hath succesfully tokenized le block :)
+            i += current_x
+            x = current_x + 2
+            block_num += 1
+            break  # move on
+
+        except Exception: # oh noes it failed D:   
+            current_x -= 1
+            print(f"Program {current_name} failed to tokenize, retrying.")
+
+    if current_x <= 0:
+        # we ignore the problem and move on
+        print(f"could not tokenize lines at index {i}, skipping.")
         i += 1
 
 # Anything below is the tutorial for getting the file to the calculator
-if len(data_format_step6) == 1: # Print if one program was exported
+if block_num == 1: # Print if one program was exported
     print("Step 6 completed.")
     print("Your file has been formatted into TI-BASIC.")
     print(f"It has been outputted under the file name '{prgm_name}.8xp'.")
     print("Would you like a tutorial on how to get the file onto your calculator?")
-if len(data_format_step6) > 1: # Print if multiple programs were exported
+if block_num > 1: # Print if multiple programs were exported
     print("Step 6 completed.")
     print("Your file was too big to fit in a singular file.")
     print(f"It has been split into multiple files with names starting with {prgm_name}.")
